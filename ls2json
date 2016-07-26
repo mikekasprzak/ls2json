@@ -1,3 +1,35 @@
 #!/usr/bin/env php
 <?php
-echo "hello\n";
+
+$data = [];
+
+function Add(&$node,$key,$value) {
+	if ( array_key_exists($key,$node) ) {
+		if ( is_string($node[$key]) ) {
+			echo "m\n";
+			$node[$key] = [ $node[$key] ];
+			$node[$key][] = $value;
+		}
+		else if ( is_array($node[$key]) ) {
+			echo "a\n";
+			$node[$key][] = $value;
+		}
+		else {
+			// uh oh
+			return false;
+		}
+	}
+	else {
+			echo "x\n";
+		$node[$key] = $value;
+	}
+	return true;
+}
+
+Add($data,"car","moof");
+Add($data,"car","zoomer");
+Add($data,"car","conferr");
+Add($data,"car","shemby");
+Add($data,"CAR","nofe");
+
+echo json_encode($data,JSON_PRETTY_PRINT)."\n";
