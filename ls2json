@@ -21,55 +21,90 @@ function tree_Add(&$node,$key,$value) {
 	return true;
 }
 
-
-$data = [];
-
-$indent = 0;
-$stack = [];
-$stack[] = &$data;
-
-while ( ($line = fgets(STDIN)) !== false ) {
-	$SP = &$stack[count($stack)-1];
-	$m = [];
+function ls_Parse($FP = STDIN) {
+	$data = [];
 	
-	preg_match_all('/\S+/', $line, $m, PREG_OFFSET_CAPTURE);
-	if ( !isset($m[0][0]) ) {
-		// Blank Line //
-	}
-	else if ( isset($m[0][0]) && $m[0][0][0][0] == "#" ) {
-		// Comment (TODO: Make comment checking smarter) //
-	}
-	else if ( isset($m[0][1]) && $m[0][1][0] == "{" ) {
-		$SP[$m[0][0][0]] = [];
-		$stack[] = &$SP[$m[0][0][0]];
-
-		$indent++;
-	}
-	else if ( isset($m[0][2]) && $m[0][2][0] == "{" ) {
-		if ( !isset($SP[$m[0][0][0]]) ) {
+	$indent = 0;
+	$stack = [];
+	$stack[] = &$data;
+	
+	while ( ($line = fgets($FP)) !== false ) {
+		$SP = &$stack[count($stack)-1];
+		$m = [];
+		
+		preg_match_all('/\S+/', $line, $m, PREG_OFFSET_CAPTURE);
+		if ( !isset($m[0][0]) ) {
+			// Blank Line //
+		}
+		else if ( isset($m[0][0]) && $m[0][0][0][0] == "#" ) {
+			// Comment (TODO: Make comment checking smarter) //
+		}
+		else if ( isset($m[0][1]) && $m[0][1][0] == "{" ) {
+			// Single Token w/ Brace //
 			$SP[$m[0][0][0]] = [];
+			$stack[] = &$SP[$m[0][0][0]];
+	
+			$indent++;
 		}
-		$SP[$m[0][0][0]][$m[0][1][0]] = [];
-		$stack[] = &$SP[$m[0][0][0]][$m[0][1][0]];
-
-		$indent++;
-	}
-	else if ( isset($m[0][0]) && $m[0][0][0] == "}" ) {
-		$indent--;
-
-		array_pop($stack);
-	}
-	else {
-		$key = &$m[0][0][0];
-		$value = trim(substr($line,$m[0][1][1]));
-		
-		// Check for ", ", and if found, make it an array //
-		if ( strpos( $value, ', ' ) !== false ) {
-			$value = explode(', ',$value);
+		else if ( isset($m[0][2]) && $m[0][2][0] == "{" ) {
+			// Double Token w/ Brace //
+			if ( !isset($SP[$m[0][0][0]]) ) {
+				$SP[$m[0][0][0]] = [];
+			}
+			$SP[$m[0][0][0]][$m[0][1][0]] = [];
+			$stack[] = &$SP[$m[0][0][0]][$m[0][1][0]];
+	
+			$indent++;
 		}
-		
-		tree_Add($SP,$key,$value);
+		else if ( isset($m[0][0]) && $m[0][0][0] == "}" ) {
+			// Closing Brace //
+			$indent--;
+	
+			array_pop($stack);
+		}
+		else {
+			// Everything else (KEY VALUE) //
+			$key = &$m[0][0][0];
+			$value = isset($m[0][1]) ? trim(substr($line, $m[0][1][1])) : null;
+			
+			// Check for ", ", and if found, make it an array //
+			if ( strpos($value, ', ') !== false ) {
+				$value = explode(', ',$value);
+			}
+			// Check for "<<<", which means a multi-line string //
+			else if ( strpos($value, '<<<') === 0 ) {
+				$term = trim(substr($value, 3));
+				$value = "";
+				$lines = 0;
+				
+				while ( $line2 = fgets($FP) ) {
+					if ( strpos($line2, $term) !== false ) {
+						break;
+					}
+					
+					if ( $lines > 0 ) {
+						$value .= "\n";
+					}
+					$value .= trim($line2,"\r\n");
+					$lines++;
+				}
+			}
+			
+			tree_Add($SP,$key,$value);
+		}
 	}
+	
+	return $data;
 }
 
-echo json_encode($data,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n";
+$file = STDIN;
+if ( count($argv) > 1 ) {
+	$file = fopen($argv[1], 'r');
+	if ( $file === false ) {
+		return -1;
+	}	
+}
+
+$data = ls_Parse($file);
+
+echo json_encode( $data, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES )."\n";
