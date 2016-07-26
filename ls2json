@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-function tree_Add(&$node,$key,$value) {
+function tree_Add( &$node, $key, $value ) {
 	if ( array_key_exists($key,$node) ) {
 		if ( is_string($node[$key]) ) {
 			$node[$key] = [ $node[$key] ];
@@ -21,7 +21,7 @@ function tree_Add(&$node,$key,$value) {
 	return true;
 }
 
-function ls_Parse($FP = STDIN) {
+function ls_Parse( $FP ) {
 	$data = [];
 	
 	$indent = 0;
