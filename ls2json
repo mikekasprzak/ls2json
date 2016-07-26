@@ -6,12 +6,10 @@ $data = [];
 function Add(&$node,$key,$value) {
 	if ( array_key_exists($key,$node) ) {
 		if ( is_string($node[$key]) ) {
-			echo "m\n";
 			$node[$key] = [ $node[$key] ];
 			$node[$key][] = $value;
 		}
 		else if ( is_array($node[$key]) ) {
-			echo "a\n";
 			$node[$key][] = $value;
 		}
 		else {
@@ -20,7 +18,6 @@ function Add(&$node,$key,$value) {
 		}
 	}
 	else {
-			echo "x\n";
 		$node[$key] = $value;
 	}
 	return true;
